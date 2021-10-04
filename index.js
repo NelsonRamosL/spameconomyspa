@@ -7,16 +7,18 @@ const http = require('http')
 const fs = require('fs')
 const url = require('url')
 const axios = require("axios");
-
+const { v4: uuidv4 } = require('uuid')
 
 /** 
 2. Crear una función que reciba la lista de correos, asunto y contenido a enviar. Esta
 función debe retornar una promesa.
  */
-async function enviar(to, subject, text) {
+async function enviar(to, subject, textt) {
     console.log("inicio de envio de correo");
-    let tecto = await consulta();
-    console.log(tecto);
+  
+    let template = await consulta(); // trae el template
+
+    
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -24,19 +26,34 @@ async function enviar(to, subject, text) {
             pass: 'pelado2021',
         },
     })
-    // Paso 3
+ 
     let mailOptions = {
         from: 'nodemailerclase2021@gmail.com',
         to,
         subject,
-        text: text + tecto,
+        text: `${textt} ${template}`
     }
-    // Paso 4
+ 
     transporter.sendMail(mailOptions, (err, data) => {
-        // Paso 5
         if (err) console.log(err)
-        if (data) console.log(data)
-        console.log(mailOptions);
+        if (data) {
+
+
+/**
+5. Cada correo debe ser almacenado como un archivo con un nombre identificador
+único en una carpeta “correos”. Usar el paquete UUID para esto.
+*/
+            let id =uuidv4().slice(0,6);
+           
+            let datosGuardar = {
+                id,
+                ...mailOptions
+            }
+            fs.writeFileSync(`./correos/${id}.json`, JSON.stringify(datosGuardar));
+
+            console.log(datosGuardar);
+          
+        }
 
     })
 
@@ -76,26 +93,23 @@ valores del dólar, euro, uf y utm. Este template debe ser concatenado al mensaj
 descrito por el usuario en el formulario HTML.
 */
 
-function consulta() {
-    axios
-        .get("https://mindicador.cl/api")
-        .then((datos) => {
-            const indicadores = datos.data;
+async function consulta() {
+const {data} = await axios.get("https://mindicador.cl/api")
 
-            let template =
-                `
-El valor del Dolar el dia de hoy es: ${indicadores.dolar.valor} <br>
-El valor del euro el dia de hoy es: ${indicadores.euro.valor} <br>
-El valor del uf el dia de hoy es: ${indicadores.uf.valor} <br>
-El valor del utm el dia de hoy es: ${indicadores.utm.valor} <br>
+   let template =`
+
+Hola Los indicadores economicos de hoy son los siguientes 
+
+El valor del Dolar el dia de hoy es: ${data.dolar.valor} 
+El valor del euro el dia de hoy es: ${data.euro.valor}
+El valor del uf el dia de hoy es: ${data.uf.valor}
+El valor del utm el dia de hoy es: ${data.utm.valor} 
 `;
-      //      console.log(template);
-            return template;
-        })
-        .catch((e) => {
-            console.log(e.message);
-        });
-}
+
+return template;
+
+
+        }
 
 
 
@@ -103,7 +117,3 @@ El valor del utm el dia de hoy es: ${indicadores.utm.valor} <br>
 4. Enviar un mensaje de éxito o error por cada intento de envío de correos electrónicos.
 */
 
-/**
-5. Cada correo debe ser almacenado como un archivo con un nombre identificador
-único en una carpeta “correos”. Usar el paquete UUID para esto.
- */
