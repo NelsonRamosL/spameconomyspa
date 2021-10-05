@@ -7,7 +7,8 @@ const http = require('http')
 const fs = require('fs')
 const url = require('url')
 const axios = require("axios");
-const { v4: uuidv4 } = require('uuid')
+const { v4: uuidv4 } = require('uuid');
+const { Console } = require('console');
 
 /** 
 2. Crear una función que reciba la lista de correos, asunto y contenido a enviar. Esta
@@ -35,10 +36,11 @@ async function enviar(to, subject, textt) {
     }
  
     transporter.sendMail(mailOptions, (err, data) => {
-        if (err) console.log(err)
+        if (err) {
+            console.log(err)
+            return false;
+        }
         if (data) {
-
-
 /**
 5. Cada correo debe ser almacenado como un archivo con un nombre identificador
 único en una carpeta “correos”. Usar el paquete UUID para esto.
@@ -52,35 +54,48 @@ async function enviar(to, subject, textt) {
             fs.writeFileSync(`./correos/${id}.json`, JSON.stringify(datosGuardar));
 
             console.log(datosGuardar);
-          
+          return true;
         }
 
     })
-
+    
 }
 
 
 http
-    .createServer((req, res) => {
-        res.writeHead(200, { 'Content-Type': 'text/html' })
-        fs.readFile('index.html', 'utf8', (err, data) => {
+.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' })
+    fs.readFile('index.html', 'utf8', (err, data) => {
             res.end(data);
         })
-
+        
         console.log(req.url.startsWith('/mailing.js'))
         let { correos, asunto, contenido } = url.parse(req.url, true).query
         if (req.url.startsWith('/mailing.js')) {
-
+            
             console.log("entramos en mailing.js");
-            enviar(correos, asunto, contenido);
+          let resultado =  enviar(correos, asunto, contenido);
+          
+/**
+4. Enviar un mensaje de éxito o error por cada intento de envío de correos electrónicos.
+*/
 
+// resultado.then( Console.log(resultado) )
+// .catch(Console.log(resultado));
+          if (resultado) {
+              res.write("correo enviado");
+              } else {
+                res.write("correo No enviado");
+              } 
+            
+          //    console.log("resultado :",resultado);
         }
-
-
-
+        
+        
+        
     })
     .listen(5500, () => console.log('Servidor encendido'))
-
+    
 
 
 
@@ -113,7 +128,4 @@ return template;
 
 
 
-/**
-4. Enviar un mensaje de éxito o error por cada intento de envío de correos electrónicos.
-*/
 
